@@ -2,7 +2,7 @@ from datetime import date
 from io import StringIO
 
 from ..db.sqlite3conv import strdate2timestamp
-from ..util.dateutil import nextYearMonth
+from ..util.dateutil import addDayToString, nextYearMonth
 
 """ 気象データDAOクラス """
 
@@ -63,7 +63,7 @@ WHERE
 ORDER BY did, measurement_time;
 """
 
-    _QUERY_MONTH_DATA = """
+    _QUERY_RANGE_DATA = """
 SELECT
    did, to_char(measurement_time,'YYYY-MM-DD HH24:MI') measurement_time
    , temp_out, temp_in, humid, pressure
@@ -82,6 +82,10 @@ ORDER BY did, measurement_time;
     def __init__(self, conn, logger=None):
         self.conn = conn
         self.logger = logger
+        if self.logger is not None:
+            self.logger_debug = (self.logger.getEffectiveLevel() <= logging.DEBUG)
+        else:
+            self.logger_debug = False
 
     def getLastData(self, device_name):
         """観測デバイスの最終レコードを取得する
@@ -193,9 +197,30 @@ ORDER BY did, measurement_time;
             device_name, s_start, s_end_exclude))
 
         with self.conn.cursor() as cursor:
-            cursor.execute(self._QUERY_MONTH_DATA, {
+            cursor.execute(self._QUERY_RANGE_DATA, {
                     'name': device_name,
                     'from_date': s_start,
+                    'to_next_date': s_end_exclude,
+                }
+            )
+            tupledlist = cursor.fetchall()
+            if self.logger is not None:
+                self.logger.debug("tupledlist length: {}".format(len(tupledlist)))
+
+        # [tuple, ...] -> StringIO buffer
+        return self._csvToStringIO(tupledlist, require_header)
+
+
+    def getDateRangeData(self, device_name, from_date, to_date, require_header=True):
+        # Next date to string
+        s_end_exclude = addDayToString(to_date)
+        self.logger.debug("device_name: {}, from_date: {}, to_next_date: {}".format(
+            device_name, from_date, s_end_exclude))
+
+        with self.conn.cursor() as cursor:
+            cursor.execute(self._QUERY_RANGE_DATA, {
+                    'name': device_name,
+                    'from_date': from_date,
                     'to_next_date': s_end_exclude,
                 }
             )
