@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from io import StringIO
 
@@ -99,7 +100,7 @@ ORDER BY did, measurement_time;
         with self.conn.cursor() as cursor:
             cursor.execute(self._QUERY_WEATHER_LASTREC, {'name': device_name})
             row = cursor.fetchone()
-            if self.logger is not None:
+            if self.logger_debug:
                 self.logger.debug("row: {}".format(row))
 
         return row
@@ -116,7 +117,7 @@ ORDER BY did, measurement_time;
         Returns:
           list: 文字列の日付 (年月 | 年月日)
         """
-        if self.logger is not None:
+        if self.logger_debug:
             self.logger.debug("{}, {}".format(device_name, start_date))
         # Check start_date
         strdate2timestamp(start_date)
@@ -125,7 +126,7 @@ ORDER BY did, measurement_time;
             cursor.execute(qrouping_sql, {'name': device_name, groupby_name: start_date})
             # fetchall() return tuple list [(?,), (?,), ..., (?,)]
             tupledlist = cursor.fetchall()
-            if self.logger is not None:
+            if self.logger_debug:
                 self.logger.debug("tupledlist: {}".format(tupledlist))
             # tuple -> list
             result = [item for (item,) in tupledlist]
@@ -178,13 +179,13 @@ ORDER BY did, measurement_time;
             s_today = date.today().strftime('%Y-%m-%d')
         else:
             s_today = today
-        if self.logger is not None:    
+        if self.logger_debug:    
             self.logger.debug("device_name: {}, today: {}".format(device_name, s_today))
 
         with self.conn.cursor() as cursor:
             cursor.execute(self._QUERY_TODAY_DATA, {'name': device_name, 'today': s_today})
             tupledlist = cursor.fetchall()
-            if self.logger is not None:
+            if self.logger_debug:
                 self.logger.debug("tupledlist length: {}".format(len(tupledlist)))
 
         # [tuple, ...] -> StringIO buffer
@@ -193,8 +194,9 @@ ORDER BY did, measurement_time;
     def getMonthData(self, device_name, s_year_month, require_header=True):
         s_start = s_year_month + "-01"
         s_end_exclude = nextYearMonth(s_start)
-        self.logger.debug("device_name: {}, from_date: {}, to_next_date: {}".format(
-            device_name, s_start, s_end_exclude))
+        if self.logger_debug:
+            self.logger.debug("device_name: {}, from_date: {}, to_next_date: {}".format(
+                device_name, s_start, s_end_exclude))
 
         with self.conn.cursor() as cursor:
             cursor.execute(self._QUERY_RANGE_DATA, {
@@ -204,7 +206,7 @@ ORDER BY did, measurement_time;
                 }
             )
             tupledlist = cursor.fetchall()
-            if self.logger is not None:
+            if self.logger_debug:
                 self.logger.debug("tupledlist length: {}".format(len(tupledlist)))
 
         # [tuple, ...] -> StringIO buffer
@@ -214,8 +216,9 @@ ORDER BY did, measurement_time;
     def getDateRangeData(self, device_name, from_date, to_date, require_header=True):
         # Next date to string
         s_end_exclude = addDayToString(to_date)
-        self.logger.debug("device_name: {}, from_date: {}, to_next_date: {}".format(
-            device_name, from_date, s_end_exclude))
+        if self.logger_debug:
+            self.logger.debug("device_name: {}, from_date: {}, to_next_date: {}".format(
+                device_name, from_date, s_end_exclude))
 
         with self.conn.cursor() as cursor:
             cursor.execute(self._QUERY_RANGE_DATA, {
@@ -225,7 +228,7 @@ ORDER BY did, measurement_time;
                 }
             )
             tupledlist = cursor.fetchall()
-            if self.logger is not None:
+            if self.logger_debug:
                 self.logger.debug("tupledlist length: {}".format(len(tupledlist)))
 
         # [tuple, ...] -> StringIO buffer

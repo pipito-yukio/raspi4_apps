@@ -1,4 +1,5 @@
 import base64
+import logging
 from datetime import datetime
 from io import BytesIO
 
@@ -23,8 +24,13 @@ WEATHER_IDX_COLUMN = 'measurement_time'
 
 def gen_plotimage(conn, width_pixel=None, height_pixel=None, density=None, year_month=None, 
     logger=None):
-    dao = WeatherDao(conn, logger=logger)
     if logger is not None:
+        logger_debug = (logger.getEffectiveLevel() <= logging.DEBUG)
+    else:
+        logger_debug = False
+    
+    dao = WeatherDao(conn, logger=logger)
+    if logger_debug:
         logger.debug(f"dao: {dao}")
     
     if year_month is None:
@@ -32,7 +38,7 @@ def gen_plotimage(conn, width_pixel=None, height_pixel=None, density=None, year_
         s_today = WEATHER_CONF["TODAY"]
         # dao return StringIO buffer(line'\n') on csv format with header
         csv_buffer = dao.getTodayData(WEATHER_CONF["DEVICE_NAME"], today=s_today, require_header=True)
-        if logger is not None:
+        if logger_debug:
             logger.debug(f"csv_buffer: {csv_buffer}")
 
         df = pd.read_csv(csv_buffer,
@@ -40,7 +46,7 @@ def gen_plotimage(conn, width_pixel=None, height_pixel=None, density=None, year_
             parse_dates=[WEATHER_IDX_COLUMN],
             names=[WEATHER_IDX_COLUMN, 'temp_out', 'temp_in', 'humid', 'pressure']
             )
-        if logger is not None:
+        if logger_debug:
             logger.debug(f"df: {df}")
 
         # タイムスタンプをデータフレームのインデックスに設定
@@ -79,7 +85,7 @@ def gen_plotimage(conn, width_pixel=None, height_pixel=None, density=None, year_
         splited = year_month.split("-")
         s_title_date = f"{splited[0]}年{splited[1]}月"
     # データフレームをDEBUGレベルでログに出力
-    if logger is not None:
+    if logger_debug:
         logger.debug(df)
 
     # https://matplotlib.org/stable/api/figure_api.html?highlight=figure#module-matplotlib.figure
@@ -91,14 +97,15 @@ def gen_plotimage(conn, width_pixel=None, height_pixel=None, density=None, year_
         # 画面の小さいスマホのdensityで割る ※densityが大きい端末だとグラフサイズが極端に小さくなる
         #  いまのところ Pixel-4a ではこれが一番綺麗に表示される
         px = px / (2.0 if density > 2.0 else density)
-        logger.debug(f"px: {px} / density : {density}")
         fig_width_px, fig_height_px = width_pixel * px, height_pixel * px
-        logger.debug(f"fig_width_px: {fig_width_px}, fig_height_px: {fig_height_px}")
+        if logger_debug:
+            logger.debug(f"px: {px} / density : {density}")
+            logger.debug(f"fig_width_px: {fig_width_px}, fig_height_px: {fig_height_px}")
         fig = Figure(figsize=(fig_width_px, fig_height_px))
     else:
         fig = Figure(figsize=PLOT_CONF["figsize"]["pc"])
     
-    if logger is not None:
+    if logger_debug:
         logger.debug(f"fig: {fig}")
     label_fontsize, ticklabel_fontsize, ticklable_date_fontsize = tuple(
         PLOT_CONF["label.sizes"]
@@ -170,6 +177,7 @@ def gen_plotimage(conn, width_pixel=None, height_pixel=None, density=None, year_
     buf = BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight")
     data = base64.b64encode(buf.getbuffer()).decode("ascii")
-    logger.debug(f"data.len: {len(data)}")
+    if logger_debug:
+        logger.debug(f"data.len: {len(data)}")
     img_src = "data:image/png;base64," + data
     return img_src

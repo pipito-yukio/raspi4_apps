@@ -1,6 +1,7 @@
 from flask import abort, g, jsonify, render_template, request
 from plot_weather import (BAD_REQUEST_IMAGE_DATA,
-                          INTERNAL_SERVER_ERROR_IMAGE_DATA, app, app_logger)
+                          INTERNAL_SERVER_ERROR_IMAGE_DATA, app, app_logger,
+                          app_logger_debug)
 from plot_weather.dao.weathercommon import WEATHER_CONF
 from plot_weather.dao.weatherdao import WeatherDao
 from plot_weather.db.sqlite3conv import DateFormatError, strdate2timestamp
@@ -17,14 +18,16 @@ def get_dbconn():
     if 'db' not in g:
         g.db = app.config["postgreSQL_pool"].getconn()
         g.db.set_session(readonly=True, autocommit=True)
-        app_logger.debug(f"g.db:{g.db}")
+        if app_logger_debug:
+            app_logger.debug(f"g.db:{g.db}")
     return g.db
 
 
 @app.teardown_appcontext
 def close_conn(exception=None):
     db = g.pop('db', None)
-    app_logger.debug(f"db:{db}")
+    if app_logger_debug:
+        app_logger.debug(f"db:{db}")
     if db is not None:
         app.config["postgreSQL_pool"].putconn(db)
 
@@ -48,7 +51,8 @@ def index():
             device_name=WEATHER_CONF["DEVICE_NAME"],
             start_date=WEATHER_CONF["STA_YEARMONTH"],
         )
-        app_logger.debug(f"yearMonthList:{yearMonthList}")
+        if app_logger_debug:
+            app_logger.debug(f"yearMonthList:{yearMonthList}")
         # 本日データプロット画像取得
         imgBase64Encoded = gen_plotimage(conn, logger=app_logger)
     except Exception as exp:
@@ -80,7 +84,8 @@ def getTodayImage():
     :return: jSON形式(matplotlibでプロットした画像データ(形式: png)のbase64エンコード済み文字列)
          (出力内容) jSON('data:image/png;base64,... base64encoded data ...')
     """
-    app_logger.debug("getTodayImage()")
+    if app_logger_debug:
+        app_logger.debug("getTodayImage()")
     try:
         conn = get_dbconn()
         # 本日データプロット画像取得
@@ -100,7 +105,8 @@ def getMonthImage(yearmonth):
     :return: jSON形式(matplotlibでプロットした画像データ(形式: png)のbase64エンコード済み文字列)
          (出力内容) jSON('data:image/png;base64,... base64encoded data ...')
     """
-    app_logger.debug(f"yearmonth: {yearmonth}")
+    if app_logger_debug:
+        app_logger.debug(f"yearmonth: {yearmonth}")
     try:
         # リクエストパラメータの妥当性チェック: "YYYY-mm" + "-01"
         chk_yyyymmdd = yearmonth + "-01"
@@ -124,9 +130,10 @@ def getMonthImage(yearmonth):
 @app.route("/plot_weather/getlastdataforphone", methods=["GET"])
 def getLastDataForPhone():
     """最新の気象データを取得する (スマートホン専用)"""
-    app_logger.debug("getlastdataforphone()")
     headers = request.headers
-    app_logger.debug(f"headers: {headers}")
+    if app_logger_debug:
+        app_logger.debug("getlastdataforphone()")
+        app_logger.debug(f"headers: {headers}")
     # トークン必須
     token_value = app.config.get("HEADER_REQUEST_PHONE_TOKEN_VALUE")
     req_token_value = headers.get(app.config.get("HEADER_REQUEST_PHONE_TOKEN_KEY"))
@@ -158,9 +165,10 @@ def getTodayImageForPhone():
     :return: jSON形式(matplotlibでプロットした画像データ(形式: png)のbase64エンコード済み文字列)
          (出力内容) jSON('data:image/png;base64,... base64encoded data ...')
     """
-    app_logger.debug("getTodayImageForPhone()")
     headers = request.headers
-    app_logger.debug(f"headers: {headers}")
+    if app_logger_debug:
+        app_logger.debug("getTodayImageForPhone()")
+        app_logger.debug(f"headers: {headers}")
     # トークン必須
     token_value = app.config.get("HEADER_REQUEST_PHONE_TOKEN_VALUE")
     req_token_value = headers.get(app.config.get("HEADER_REQUEST_PHONE_TOKEN_KEY"))
@@ -173,14 +181,16 @@ def getTodayImageForPhone():
         # ※1.トークンチェックを通過しているのでセットされている前提で処理
         # ※2.途中でエラー (Androidアプリ側のBUG) ならExceptionで補足されJSONでメッセージが返却される
         img_size = headers.get(app.config.get("HEADER_REQUEST_IMAGE_SIZE_KEY"))
-        app_logger.debug(f"Phone imgSize: {img_size}")
+        if app_logger_debug:
+            app_logger.debug(f"Phone imgSize: {img_size}")
         img_wd, img_ht, density = 0, 0, 1.0
         if img_size is not None:
             sizes = img_size.split("x")
             img_wd = int(sizes[0])
             img_ht = int(sizes[1])
             density = float(sizes[2])
-        app_logger.debug(f"imgWd: {img_wd}, imgHt: {img_ht}, density: {density}")
+        if app_logger_debug:
+            app_logger.debug(f"imgWd: {img_wd}, imgHt: {img_ht}, density: {density}")
 
         conn = get_dbconn()
         imgBase64Encoded = gen_plotimage(
