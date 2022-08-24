@@ -27,7 +27,7 @@ def strDateToDatetimeTime000000(s_date):
     return datetime.strptime(s_date + ADD_TIME_00_00_00, FMT_CUSTOM_DATETIME)
 
 
-def addDayString(s_date, add_days=1, fmt_date=FMT_ISO_8601_DATE):
+def addDayToString(s_date, add_days=1, fmt_date=FMT_ISO_8601_DATE):
     dt = datetime.strptime(s_date, fmt_date)
     dt += timedelta(days=add_days)
     s_next = dt.strftime(fmt_date)

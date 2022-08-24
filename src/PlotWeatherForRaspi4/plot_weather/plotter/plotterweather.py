@@ -1,5 +1,4 @@
 import base64
-import os
 from datetime import datetime
 from io import BytesIO
 
@@ -8,11 +7,10 @@ from matplotlib import rcParams
 from matplotlib.dates import DateFormatter
 from matplotlib.figure import Figure
 from matplotlib.pyplot import setp
-from numpy import iterable
 
 from ..dao.weathercommon import PLOT_CONF, WEATHER_CONF
 from ..dao.weatherdao import WeatherDao
-from ..util.dateutil import (addDayString, datetimeToJpDateWithWeek,
+from ..util.dateutil import (addDayToString, datetimeToJpDateWithWeek,
                              strDateToDatetimeTime000000)
 
 """ 気象データ画像のbase64エンコードテキストデータを出力する """
@@ -63,7 +61,7 @@ def gen_plotimage(conn, width_pixel=None, height_pixel=None, density=None, year_
         # 表示範囲：当日の "00:00:00" から
         x_day_min = strDateToDatetimeTime000000(s_first_date)
         # 翌日の "00:00:00" 迄
-        s_nextday = addDayString(s_first_date)
+        s_nextday = addDayToString(s_first_date)
         x_day_max = strDateToDatetimeTime000000(s_nextday)
         # タイトル用の日本語日付(曜日)
         s_title_date = datetimeToJpDateWithWeek(first_datetime)
