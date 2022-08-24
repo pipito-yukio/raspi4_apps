@@ -1,0 +1,12 @@
+[Unit]
+Description=Cleanup PostgreSQL docker container 
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/bin/true
+ExecStop=/bin/sh -c "/home/pi/bin/postgres-12-docker.sh stop $BUILD_PATH"
+User=pi
+
+[Install]
+WantedBy=multi-user.target

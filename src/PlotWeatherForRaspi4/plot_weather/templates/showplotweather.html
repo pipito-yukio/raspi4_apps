@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Weahter finder</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+        integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+</head>
+
+<body>
+    <div id="app">
+        <div class="container">
+            <h3 class="my-3">[[ mainTitle ]]</h3>
+            <form @submit.prevent="submitUpdate">
+                <div class="form-row align-items-center">
+                    <div class="col-auto my-1">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="radioOptions" id="radioToday"
+                                value="{{ str_today }}" v-model="radioChange">
+                            <label class="form-check-label" for="radioToday">{{ str_today }}</label>
+                        </div>
+                    </div>
+                    <div class="col-auto my-1 ml-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="radioOptions" id="radioMonth" value="年月"
+                                v-model="radioChange">
+                            <label class=" form-check-label" for="radioMonth">年月</label>
+                        </div>
+                    </div>
+                    <div class="col-auto my-1 ml-1">
+                        <label class="my-1 ml-1" for="selectYearMonth">年月選択：</label>
+                        <select class="coustom-select" id="selectYearMonth" v-model="selectedYearMonth"
+                            :disabled="isSelectDisabled">
+                            {% for year_month in year_month_list %}
+                            <option value="{{ year_month }}">{{ year_month }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto my-1 ml-1">
+                        <button class="btn"
+                            v-bind:class="{'btn-primary': !isSubmitDisabled, 'btn-secondary': isSubmitDisabled}"
+                            type="submit" :disabled="isSubmitDisabled">更新</button>
+                    </div>
+                    <div class="col-auto my-1 ml-2 p-2 bg-warning text-dark">{{ info_today_update_interval }}</div>
+                </div>
+            </form>
+            <div class="col-auto my-1 mx-1">
+                <img class="img-fluid" v-bind:src="imgSrc" width="980" />
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Downloaded local: bootstrap.js -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"
+        integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k"
+        crossorigin="anonymous"></script>
+    <!-- vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script type="text/javascript">
+        //import axios from 'axios';
+        url_encoded = 'application/x-www-form-urlencoded';
+        axios.defaults.baseURL = 'http://{{ ip_host }}{{ app_root_url }}';
+        axios.defaults.headers.get['Content-Type'] = url_encoded;
+        axios.defaults.headers.get['Accepts'] = 'application/json'; // Response json
+        // httponly cookie include request 
+        axios.defaults.withCredentials = true;
+        const GET_TODAY_DATA_URL = axios.defaults.baseURL + '{{ path_get_today }}'; // 2回目以降
+        const GET_MONTH_DATA_URL = axios.defaults.baseURL + '{{ path_get_month }}';
+        const STR_TODAY = '{{ str_today }}'
+        const TITLE_SUFFIX = "{{ title_suffix }}";
+        // Vue 2
+        var app = new Vue({
+            el: '#app',
+            delimiters: ['[[', ']]'],
+            data: function () {
+                return {
+                    radioChange: '{{ str_today }}',
+                    mainTitle: '{{ default_main_title }}',
+                    selectedYearMonth: '' /* 年月取得リクエスト時の年月 */,
+                    isSubmitDisabled: false /* true: 通信中, ボタンの背景を灰色 */,
+                    imgSrc: '{{ img_src }}'/* 初回のみ当日のデータ画像がFlask側で設定する */,
+                    status: '',
+                }
+            },
+            created: function () {
+                console.log('created()');
+            },
+            mounted: function () {
+                console.log('mounted()');
+            },
+            computed: {
+                isSelectDisabled: function () {
+                    console.log('isSelectDisabled()');
+                    return this.radioChange == STR_TODAY
+                },
+            },
+            watch: {
+                radioChange(newval, val) {
+                    console.log('newval:' + newval);
+                    if (newval) {
+                        this.mainTitle = newval + TITLE_SUFFIX;
+                    }
+                },
+            },
+            methods: {
+                submitUpdate: function () {
+                    console.log('submitUpdate(): ' + this.radioChange + ',selectedYearMonth: ' + this.selectedYearMonth);
+                    reqURL = null;
+                    if (this.radioChange == STR_TODAY) {
+                        reqURL = GET_TODAY_DATA_URL;
+                    } else {
+                        if (this.selectedYearMonth == '') {
+                            return;
+                        }
+                        reqURL = GET_MONTH_DATA_URL + this.selectedYearMonth;
+                    }
+                    this.isSubmitDisabled = true;
+                    axios
+                        .get(reqURL)
+                        .then(response => {
+                            const status = response.data.status;
+                            this.status = status;
+                            console.log('response.status:', status);
+                            if (this.status == 'success') {
+                                console.log('headers:', response.headers);
+                                const resp = response.data.data;
+                                this.imgSrc = resp.img_src;
+                                this.isSubmitDisabled = false;
+                            } else {
+                                // BAD REQUES T(400) or INTERNAL SERVER ERROR (500)
+                                const err_code = response.data.code;
+                                console.log('Error code:' + err_code);
+                                const resp = response.data.data;
+                                this.imgSrc = resp.img_src;
+                                // Update disabled
+                                this.isSubmitDisabled = true;
+                                this.isSelectDisabled = true;
+                                if (err_code != 400) {
+                                    alert("サイトのサービスエラーです。しばらくしてから再読込してください。")
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.log(error);
+                            this.isSubmitDisabled = true;
+                            this.isSelectDisabled = true;
+                            // グラフをブランクに設定
+                            this.imgSrc = ''
+                            alert("通信エラー。しばらくしてから再読込してください。")
+                        });
+                },
+            },
+        }
+        )
+    </script>
+</body>
+
+</html>

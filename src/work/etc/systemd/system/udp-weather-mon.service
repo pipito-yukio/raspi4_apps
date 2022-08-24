@@ -1,0 +1,11 @@
+[Unit]
+Description=UDPClient Weather data monitor service
+After=postgres-12-doker.service
+
+[Service]
+Type=simple
+ExecStart=/home/pi/bin/udp_monitor_from_weather_sensor.sh
+User=pi
+
+[Install]
+WantedBy=multi-user.target

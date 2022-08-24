@@ -1,0 +1,15 @@
+[Unit]
+Description=PostgreSQL Start service with docker
+Before=udp-weather-mon.service webapp-plot-weatherr.service
+After=docker.service
+
+[Service]
+Type=notify
+TimeoutStartSec=0
+NotifyAccess=all
+EnvironmentFile=/etc/default/postgres-12-docker
+ExecStart=/bin/sh -c "/home/pi/bin/postgres-12-docker.sh start $BUILD_PATH"
+User=pi
+
+[Install]
+WantedBy=multi-user.target

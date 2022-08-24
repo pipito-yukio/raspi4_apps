@@ -1,0 +1,14 @@
+[Unit]
+Description=Flask webapp PlotWeather service
+After=postgres-12-docker.service
+
+[Service]
+Type=idle
+# FLASK_PROD_PORT
+EnvironmentFile=/etc/default/webapp-plot-weather
+ExecStart=/home/pi/PlotWeatherForRaspi4/start.sh prod >/dev/null
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+
