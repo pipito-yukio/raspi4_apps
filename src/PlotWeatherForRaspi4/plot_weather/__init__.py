@@ -1,3 +1,4 @@
+import enum
 import logging
 import os
 import socket
@@ -9,6 +10,12 @@ from flask import Flask
 from plot_weather.log import logsetting
 from plot_weather.util.file_util import read_json
 from plot_weather.util.image_util import image_to_base64encoded
+
+
+class DebugoutRequest(enum.Enum):
+    ARGS = 0
+    HEADERS = 1
+    BOTH = 2
 
 BAD_REQUEST_IMAGE_DATA = None
 INTERNAL_SERVER_ERROR_IMAGE_DATA = None
