@@ -212,9 +212,7 @@ ORDER BY did, measurement_time;
         # [tuple, ...] -> StringIO buffer
         return self._csvToStringIO(tupledlist, require_header)
 
-
-    def getDateRangeData(self, device_name, from_date, to_date, require_header=True):
-        # Next date to string
+    def getFromToRangeData(self, device_name, from_date, to_date, require_header=True):
         s_end_exclude = addDayToString(to_date)
         if self.logger_debug:
             self.logger.debug("device_name: {}, from_date: {}, to_next_date: {}".format(
