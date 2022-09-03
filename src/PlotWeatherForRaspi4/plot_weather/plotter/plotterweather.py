@@ -4,22 +4,23 @@ import logging
 from datetime import datetime, timedelta
 from io import BytesIO
 
+from ..dao.weathercommon import PLOT_CONF, WEATHER_CONF
 import pandas as pd
 from matplotlib import rcParams
+# 日本語フォント設定
+# https://matplotlib.org/3.1.0/gallery/text_labels_and_annotations/font_family_rc_sgskip.html
+rcParams['font.family'] = PLOT_CONF['font.family']
+font_family_font='font.' + PLOT_CONF['font.family']
+rcParams[font_family_font] = PLOT_CONF['japanese.font']
 import matplotlib.dates as mdates
 from matplotlib.figure import Figure
 from matplotlib.pyplot import setp
 
-from ..dao.weathercommon import PLOT_CONF, WEATHER_CONF
 from ..dao.weatherdao import WeatherDao
 from ..util.dateutil import (addDayToString, datetimeToJpDateWithWeek,
                              strDateToDatetimeTime000000, FMT_ISO_8601_DATE)
 
 """ 気象データ画像のbase64エンコードテキストデータを出力する """
-
-# 日本語フォント設定
-# https://matplotlib.org/3.1.0/gallery/text_labels_and_annotations/font_family_rc_sgskip.html
-rcParams["font.family"] = PLOT_CONF["font.family"]
 
 
 # 日付画像型Enum
