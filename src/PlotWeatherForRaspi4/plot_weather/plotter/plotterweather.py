@@ -8,10 +8,27 @@ from ..dao.weathercommon import PLOT_CONF, WEATHER_CONF
 import pandas as pd
 from matplotlib import rcParams
 # 日本語フォント設定
-# https://matplotlib.org/3.1.0/gallery/text_labels_and_annotations/font_family_rc_sgskip.html
+#  IPAexフォント(IPAexGoがインストール済みのであると仮定した場合
+# [A] 叉は [B] のどちらの方法でも指定された日本語フォントが反映される
+#[A]. https://matplotlib.org/3.1.0/gallery/text_labels_and_annotations/font_family_rc_sgskip.html
+#    Configuring the font family
+# rcParams['font.family'] = 'sans-serif'
+# rcParams[font.sans-serif] = ['IPAexGothic'] <<-- リスト
+# ~/[Application root]/plot_weather/dao/conf/plot_weather.json: PLOT_CONF
 rcParams['font.family'] = PLOT_CONF['font.family']
 font_family_font='font.' + PLOT_CONF['font.family']
 rcParams[font_family_font] = PLOT_CONF['japanese.font']
+#[B] "matplotlibrc" ファイルの 14,15,16行目に記載されている方法
+# ## If you wish to change your default style, copy this file to one of the
+# ## following locations:
+# ##     Unix/Linux:
+# ##            $HOME/.config/matplotlib/matplotlibrc
+# ## ...無関係部分省略...
+# ## and edit that copy.
+# 下記(1),(2)のコメントアウトを外す ※オリジナルはコメントアウトされている
+#  (1) font.family: sans-serif
+#      "IPAexGothic" を先頭に追記する
+#  (2) font.sans-serif: IPAexGothic, DejaVu Sans, ..., sans-serif
 import matplotlib.dates as mdates
 from matplotlib.figure import Figure
 from matplotlib.pyplot import setp
