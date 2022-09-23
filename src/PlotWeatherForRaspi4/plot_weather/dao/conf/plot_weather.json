@@ -3,8 +3,6 @@
   "japanese.font": ["IPAexGothic"],
   "label.sizes": [10, 9, 9],
   "figsize": {
-    "phone": [6, 10],
-    "tablet": [8, 7],
     "pc": [11, 8]
   },
   "ylim": {
