@@ -5,8 +5,8 @@ import socket
 import uuid
 from typing import Dict
 
-from psycopg2.pool import SimpleConnectionPool
 from flask import Flask
+from psycopg2.pool import SimpleConnectionPool
 
 from plot_weather.log import logsetting
 from plot_weather.util.file_util import read_json
@@ -24,7 +24,7 @@ CONF_PATH: str = os.path.expanduser("~/bin/pigpio/conf")
 DB_CONF_PATH: str = os.path.join(CONF_PATH, "dbconf.json")
 DB_CONN_MAX: int = int(os.environ.get("DB_CONN_MAX", "5"))
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 # ロガーを本アプリ用のものに設定する
 app_logger: logging.Logger = logsetting.get_logger("app_main")
 app_logger_debug: bool = (app_logger.getEffectiveLevel() <= logging.DEBUG)
