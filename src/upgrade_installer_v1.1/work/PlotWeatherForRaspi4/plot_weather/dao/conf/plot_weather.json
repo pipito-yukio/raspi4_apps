@@ -1,0 +1,12 @@
+{
+  "font.family": "sans-serif",
+  "japanese.font": ["IPAexGothic"],
+  "label.sizes": [10, 9, 9],
+  "figsize": {
+    "pc": [11, 8]
+  },
+  "ylim": {
+    "temp": [-20, 40],
+    "pressure": [960, 1030]
+  }
+}
