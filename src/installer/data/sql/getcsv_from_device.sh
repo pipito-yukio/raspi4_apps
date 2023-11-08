@@ -12,12 +12,8 @@ Try --help option
 END
 }
 
-query() {
-   sqlite3 -cmd 'PRAGMA foreign_key=ON' "$PATH_WEATHER_DB" "$@"
-}
-
 get_csv() {
-cat<<-EOF | query -csv
+cat<<-EOF | sqlite3 "$PATH_WEATHER_DB" -csv
     SELECT id, name FROM t_device ORDER BY id;
 EOF
 }

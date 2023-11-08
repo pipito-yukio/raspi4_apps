@@ -12,10 +12,6 @@ Try --help option
 END
 }
 
-query() {
-   sqlite3 -cmd 'PRAGMA foreign_key=ON' "$PATH_WEATHER_DB" "$@"
-}
-
 next_to_date() {
     retval=$(date -d "$1 1 days" +'%F');
     echo "$retval"
@@ -25,15 +21,15 @@ next_to_date() {
 get_csv() {
     dev_name="$1";
     where="$2";
-cat<<-EOF | query -csv
+cat<<-EOF | sqlite3 "$PATH_WEATHER_DB" -csv
     SELECT
       did,
       datetime(measurement_time, 'unixepoch', 'localtime'), 
       temp_out, temp_in, humid, pressure
     FROM
-      t_weather wh INNER JOIN t_device dv ON wh.did = dv.id
+      t_weather
     WHERE
-      dv.name='${dev_name}' AND (${where})
+      did=(SELECT id FROM t_device WHERE name = '${dev_name}') AND (${where})
     ORDER BY measurement_time;
 EOF
 }
@@ -98,17 +94,13 @@ where=
 if [ -n "$from_date" ] && [ -n "$to_date" ]; then
    next_date=$(next_to_date "$to_date");
    where=" measurement_time >= strftime('%s','"$from_date"','-9 hours') AND measurement_time < strftime('%s','"$next_date"','-9 hours')"
-   range_from=$(echo "${from_date}" | sed 's/-//g') 
-   range_to=$(echo "${to_date}" | sed 's/-//g') 
 fi
 if [ -n "$from_date" ] && [ -z "$to_date" ]; then
    where=" measurement_time >= strftime('%s','"$from_date"','-9 hours')"
-   range=$(echo "${from_date}" | sed 's/-//g') 
 fi
 if [ -z "$from_date" ] && [ -n "$to_date" ]; then
    next_date=$(next_to_date "$to_date");
    where=" measurement_time < strftime('%s','"$next_date"','-9 hours')"
-   range=$(echo "${to_date}" | sed 's/-//g') 
 fi
 if [ -z "$from_date" ] && [ -z "$to_date" ]; then
    where=" 1=1"
