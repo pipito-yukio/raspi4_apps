@@ -474,13 +474,9 @@ Try --help option
 END
 }
 
-query() {
-   sqlite3 -cmd 'PRAGMA foreign_key=ON' "$PATH_WEATHER_DB" "$@"
-}
-
-get_csv() {
-cat<<-EOF | query -csv
-    SELECT id, name FROM t_device ORDER BY id;
+get_device_csv() {
+cat<<-EOF | sqlite3 "$PATH_WEATHER_DB" -csv
+    SELECT * FROM t_device ORDER BY id;
 EOF
 }
 
@@ -553,10 +549,6 @@ Try --help option
 END
 }
 
-query() {
-   sqlite3 -cmd 'PRAGMA foreign_key=ON' "$PATH_WEATHER_DB" "$@"
-}
-
 next_to_date() {
     retval=$(date -d "$1 1 days" +'%F');
     echo "$retval"
@@ -566,7 +558,7 @@ next_to_date() {
 get_csv() {
     dev_name="$1";
     where="$2";
-cat<<-EOF | query -csv
+cat<<-EOF | sqlite3 "$PATH_WEATHER_DB" -csv
     SELECT
       did,
       datetime(measurement_time, 'unixepoch', 'localtime'), 
