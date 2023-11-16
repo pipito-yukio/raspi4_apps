@@ -1,4 +1,5 @@
 import os
+import logging
 import signal
 import socket
 from datetime import datetime
@@ -16,6 +17,8 @@ WEATHER_UDP_PORT = 2222
 BUFF_SIZE = 1024
 PATH_CONF = os.path.join(os.environ.get("PATH_LOGGER_CONF", os.path.expanduser("~/bin/pigpio/conf")))
 PATH_DBCONN_FILE = os.path.join(PATH_CONF, "dbconf.json")
+
+isLogLevelDebug = False
 
 
 def detect_signal(signum, frame):
@@ -50,7 +53,8 @@ def loop(client, conn):
         line = data.decode("utf-8")
         record = line.split(",")
         # Insert weather DB with local time
-        logger.debug(line)
+        if isLogLevelDebug:
+            logger.debug(line)
         # PostgreSQL timestamp.
         now_timestamp = datetime.now()
         s_timestamp = now_timestamp.strftime("%Y-%m-%d %H:%M:%S")
@@ -62,6 +66,8 @@ if __name__ == '__main__':
     global pgdb
 
     logger = logsetting.create_logger("service_weather") # only fileHandler
+    isLogLevelDebug = logger.getEffectiveLevel() <= logging.DEBUG
+    signal.signal(signal.SIGTERM, detect_signal)
 
     hostname = socket.gethostname()
     # Receive broadcast.
