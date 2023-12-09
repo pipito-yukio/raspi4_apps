@@ -15,7 +15,7 @@ def _csvToStringIO(
         require_header=True) -> StringIO:
     str_buffer = StringIO()
     if require_header:
-        str_buffer.write(HEADER_WEATHER+"\n")
+        str_buffer.write(HEADER_WEATHER + "\n")
 
     for (did, m_time, temp_in, temp_out, humid, pressure) in tuple_list:
         line = f'{did},"{m_time}",{temp_in},{temp_out},{humid},{pressure}\n'
@@ -27,15 +27,14 @@ def _csvToStringIO(
 
 
 class WeatherDao:
-
-    _QUERY_WEATHER_LASTREC: str = """
+    _QUERY_LASTREC: str = """
 SELECT
   to_char(measurement_time,'YYYY-MM-DD HH24:MI') as measurement_time
   , temp_out, temp_in, humid, pressure
 FROM
-  weather.t_weather
+  weather.t_weather tw INNER JOIN weather.t_device td ON tw.did = td.id
 WHERE
-  did=(SELECT id FROM weather.t_device WHERE name=%(name)s)
+  td.name=%(name)s
   AND
   measurement_time = (SELECT max(measurement_time) FROM weather.t_weather);
 """
@@ -44,11 +43,11 @@ WHERE
 SELECT
   to_char(measurement_time, 'YYYY-MM-DD') as groupby_days
 FROM
-  weather.t_weather
+  weather.t_weather tw INNER JOIN weather.t_device td ON tw.did = td.id
 WHERE
-  did=(SELECT id FROM weather.t_device WHERE name=%(name)s)
+  td.name=%(name)s
   AND
-  to_char(measurement_time, 'YYYY-MM-DD') >= %(groupby_days)s
+  to_char(measurement_time, 'YYYY-MM-DD') >= %(start_date)s
 GROUP BY to_char(measurement_time, 'YYYY-MM-DD')
 ORDER BY to_char(measurement_time, 'YYYY-MM-DD');
     """
@@ -57,11 +56,9 @@ ORDER BY to_char(measurement_time, 'YYYY-MM-DD');
 SELECT
   to_char(measurement_time, 'YYYY-MM') as groupby_months
 FROM
-  weather.t_weather
+  weather.t_weather tw INNER JOIN weather.t_device td ON tw.did = td.id
 WHERE
-  did=(SELECT id FROM weather.t_device WHERE name=%(name)s)
-  AND
-  to_char(measurement_time, 'YYYY-MM') >= %(groupby_months)s
+  td.name=%(name)s
   GROUP BY to_char(measurement_time, 'YYYY-MM')
   ORDER BY to_char(measurement_time, 'YYYY-MM') DESC;
 """
@@ -71,12 +68,12 @@ SELECT
    did, to_char(measurement_time,'YYYY-MM-DD HH24:MI') as measurement_time
    , temp_out, temp_in, humid, pressure
 FROM
-   weather.t_weather
+  weather.t_weather tw INNER JOIN weather.t_device td ON tw.did = td.id
 WHERE
-   did=(SELECT id FROM weather.t_device WHERE name=%(name)s)
+   td.name=%(name)s
    AND
    measurement_time >= to_timestamp(%(today)s, 'YYYY-MM-DD HH24:MI:SS')
-ORDER BY did, measurement_time;
+ORDER BY measurement_time;
 """
 
     _QUERY_RANGE_DATA: str = """
@@ -84,24 +81,24 @@ SELECT
    did, to_char(measurement_time,'YYYY-MM-DD HH24:MI') as measurement_time
    , temp_out, temp_in, humid, pressure
 FROM
-   weather.t_weather
+  weather.t_weather tw INNER JOIN weather.t_device td ON tw.did = td.id
 WHERE
-   did=(SELECT id FROM weather.t_device WHERE name=%(name)s)
+   td.name=%(name)s
    AND (
      measurement_time >= to_timestamp(%(from_date)s, 'YYYY-MM-DD HH24::MI:SS')
      AND
      measurement_time < to_timestamp(%(to_next_date)s, 'YYYY-MM-DD HH24:MI:SS')
    )
-ORDER BY did, measurement_time;
+ORDER BY measurement_time;
 """
 
     _QUERY_FIRST_RECORD_WITH_DEVICE: str = """
 SELECT
    to_char(min(measurement_time), 'YYYY-MM-DD') as min_measurement_day
 FROM 
-   weather.t_weather
+   weather.t_weather tw INNER JOIN weather.t_device td ON tw.did = td.id
 WHERE
-   did=(SELECT id FROM weather.t_device WHERE name=%(name)s);
+   td.name=%(name)s
 """
 
     def __init__(self, conn: connection, logger: Optional[logging.Logger] = None):
@@ -114,11 +111,8 @@ WHERE
     def getLastData(self,
                     device_name: str) -> Optional[Tuple[str, float, float, float, float]]:
         """観測デバイスの最終レコードを取得する
-
-        Args:
-          device_name str: 観測デバイス名
-
-        Returns:
+        :param device_name: 観測デバイス名
+        :return
           tuple: (measurement_time[%Y %m %d %H %M], temp_out, temp_in, humid, pressure)
           ただし観測デバイス名に対応するレコードがない場合は None
         """
